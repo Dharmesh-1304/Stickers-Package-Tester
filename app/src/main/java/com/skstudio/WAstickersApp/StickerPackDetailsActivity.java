@@ -19,18 +19,26 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.view.WindowCompat;
 
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
 import java.lang.ref.WeakReference;
 
@@ -62,7 +70,10 @@ public class StickerPackDetailsActivity extends AddStickerPackActivity {
     private View divider;
     private WhiteListCheckAsyncTask whiteListCheckAsyncTask;
     private AdView mAdView, mAdView1;
-    private InterstitialAd mInterstitialAd;
+    private InterstitialAd interstitialAd;
+    private RewardedAd rewardedAd;
+    private boolean isAdShowing = false;
+    private boolean isRewardEarned = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +103,10 @@ public class StickerPackDetailsActivity extends AddStickerPackActivity {
         packPublisherTextView.setText(stickerPack.publisher);
         packTrayIcon.setImageURI(StickerPackLoader.getStickerAssetUri(stickerPack.identifier, stickerPack.trayImageFile));
         packSizeTextView.setText(Formatter.formatShortFileSize(this, stickerPack.getTotalSize()));
-        addButton.setOnClickListener(v -> addStickerPackToWhatsApp(stickerPack.identifier, stickerPack.name));
+        addButton.setOnClickListener(v ->
+                showRewardedAndAddSticker(stickerPack.identifier, stickerPack.name)
+        );
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(showUpButton);
             getSupportActionBar().setTitle(showUpButton ? getResources().getString(R.string.title_activity_sticker_pack_details_multiple_pack) : getResources().getQuantityString(R.plurals.title_activity_sticker_packs_list, 1));
@@ -104,12 +118,81 @@ public class StickerPackDetailsActivity extends AddStickerPackActivity {
             public void onInitializationComplete(InitializationStatus initializationStatus) {
             }
         });
-
+        loadRewardedAd();
         mAdView = findViewById(R.id.adView);
         mAdView1 = findViewById(R.id.adView1);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
         mAdView1.loadAd(adRequest);
+    }
+
+    private void loadRewardedAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        RewardedAd.load(this,
+                "ca-app-pub-6979979912689100/4393875532", // Test Ad Unit ID
+                adRequest,
+                new RewardedAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull RewardedAd ad) {
+                        rewardedAd = ad;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError error) {
+                        rewardedAd = null;
+                    }
+                });
+    }
+
+    private void showRewardedAndAddSticker(String identifier, String stickerPackName) {
+
+        if (isAdShowing) return;
+
+        if (rewardedAd != null) {
+
+            isAdShowing = true;
+            isRewardEarned = false;
+
+            rewardedAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    isAdShowing = false;
+
+                    // Check if reward was earned
+                    if (!isRewardEarned) {
+                        Toast.makeText(StickerPackDetailsActivity.this,
+                                "Watch full ad to unlock stickers",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    rewardedAd = null;
+                    loadRewardedAd(); // preload next ad
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                    isAdShowing = false;
+                    rewardedAd = null;
+                    loadRewardedAd();
+
+                    Toast.makeText(StickerPackDetailsActivity.this,
+                            "Ad failed, try again",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            rewardedAd.show(this, rewardItem -> {
+                //  User watched full ad
+                isRewardEarned = true;
+
+                addStickerPackToWhatsApp(identifier, stickerPackName);
+            });
+
+        } else {
+            Toast.makeText(this, "Ad not ready, try again", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void launchInfoActivity(String publisherWebsite, String publisherEmail, String privacyPolicyWebsite, String licenseAgreementWebsite, String trayIconUriString) {

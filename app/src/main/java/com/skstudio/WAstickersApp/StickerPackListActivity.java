@@ -10,13 +10,22 @@ package com.skstudio.WAstickersApp;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import androidx.core.view.WindowCompat;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -33,6 +42,11 @@ public class StickerPackListActivity extends AddStickerPackActivity {
     private WhiteListCheckAsyncTask whiteListCheckAsyncTask;
     private ArrayList<StickerPack> stickerPackList;
     private AdView mAdView;
+    private AdView mAdView1;
+    private RewardedAd rewardedAd;
+    private boolean isAdShowing = false;
+    private boolean isRewardEarned = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,8 +58,12 @@ public class StickerPackListActivity extends AddStickerPackActivity {
             getSupportActionBar().setTitle(getResources().getQuantityString(R.plurals.title_activity_sticker_packs_list, stickerPackList.size()));
         }
         mAdView = findViewById(R.id.adView);
+        mAdView1 = findViewById(R.id.adView7);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
+        mAdView1.loadAd(adRequest);
+        MobileAds.initialize(this, initializationStatus -> {});
+        loadRewardedAd();
     }
 
     @Override
@@ -78,8 +96,77 @@ public class StickerPackListActivity extends AddStickerPackActivity {
     }
 
 
-    private final StickerPackListAdapter.OnAddButtonClickedListener onAddButtonClickedListener = pack -> addStickerPackToWhatsApp(pack.identifier, pack.name);
+    private final StickerPackListAdapter.OnAddButtonClickedListener onAddButtonClickedListener =
+            pack -> showRewardedAndAddSticker(pack.identifier, pack.name);
 
+    private void loadRewardedAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        RewardedAd.load(this,
+                "ca-app-pub-6979979912689100/5679037049", // Test Ad Unit ID
+                adRequest,
+                new RewardedAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull RewardedAd ad) {
+                        rewardedAd = ad;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError error) {
+                        rewardedAd = null;
+                    }
+                });
+    }
+
+    private void showRewardedAndAddSticker(String identifier, String stickerPackName) {
+
+        if (isAdShowing) return;
+
+        if (rewardedAd != null) {
+
+            isAdShowing = true;
+            isRewardEarned = false;
+
+            rewardedAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    isAdShowing = false;
+
+                    // Check if reward was earned
+                    if (!isRewardEarned) {
+                        Toast.makeText(StickerPackListActivity.this,
+                                "Watch full ad to unlock stickers",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    rewardedAd = null;
+                    loadRewardedAd(); // preload next ad
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                    isAdShowing = false;
+                    rewardedAd = null;
+                    loadRewardedAd();
+
+                    Toast.makeText(StickerPackListActivity.this,
+                            "Ad failed, try again",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            rewardedAd.show(this, rewardItem -> {
+                //  User watched full ad
+                isRewardEarned = true;
+
+                addStickerPackToWhatsApp(identifier, stickerPackName);
+            });
+
+        } else {
+            Toast.makeText(this, "Ad not ready, try again", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void recalculateColumnCount() {
         final int previewSize = getResources().getDimensionPixelSize(R.dimen.sticker_pack_list_item_preview_image_size);

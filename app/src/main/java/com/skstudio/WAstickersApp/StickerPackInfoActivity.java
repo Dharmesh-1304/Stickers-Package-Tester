@@ -23,8 +23,15 @@ import android.widget.TextView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.skstudio.WAstickersApp.StickerPackDetailsActivity;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
@@ -36,9 +43,14 @@ public class StickerPackInfoActivity extends BaseActivity {
 
     private static final String TAG = "StickerPackInfoActivity";
     private AdView mAdView;
+    private AdView mAdView1;
+    private InterstitialAd interstitialAd;
+    private boolean isAdShown = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        loadInterstitialAd();
         setContentView(R.layout.activity_sticker_pack_info);
 
         final String trayIconUriString = getIntent().getStringExtra(StickerPackDetailsActivity.EXTRA_STICKER_PACK_TRAY_ICON);
@@ -48,8 +60,10 @@ public class StickerPackInfoActivity extends BaseActivity {
         final String licenseAgreement = getIntent().getStringExtra(StickerPackDetailsActivity.EXTRA_STICKER_PACK_LICENSE_AGREEMENT);
         final TextView trayIcon = findViewById(R.id.tray_icon);
         mAdView = findViewById(R.id.adView1);
+        mAdView1 = findViewById(R.id.adView10);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
+        mAdView1.loadAd(adRequest);
         try {
             final InputStream inputStream = getContentResolver().openInputStream(Uri.parse(trayIconUriString));
             final BitmapDrawable trayDrawable = new BitmapDrawable(getResources(), inputStream);
@@ -80,6 +94,58 @@ public class StickerPackInfoActivity extends BaseActivity {
         setupTextView(privacyPolicy, R.id.privacy_policy);
 
         setupTextView(licenseAgreement, R.id.license_agreement);
+    }
+
+    private void loadInterstitialAd() {
+
+        if (isAdShown) return; // ✅ STOP if already shown
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this,
+                "ca-app-pub-6979979912689100/1312365712", // ✅ USE TEST ID
+                adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd ad) {
+                        interstitialAd = ad;
+
+                        // ✅ Show only once
+                        if (!isAdShown) {
+                            showInterstitial();
+                        }
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError error) {
+                        interstitialAd = null;
+                    }
+                });
+    }
+
+    private void showInterstitial() {
+        if (interstitialAd != null && !isAdShown) {
+
+            isAdShown = true; // ✅ MARK AS SHOWN
+
+            interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    interstitialAd = null;
+
+                    // ❌ REMOVE THIS LINE (IMPORTANT)
+                    // loadInterstitialAd();
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                    interstitialAd = null;
+                }
+            });
+
+            interstitialAd.show(this);
+        }
     }
 
     private void setupTextView(String website, @IdRes int textViewResId) {
