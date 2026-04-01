@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.skstudio.WAstickersApp">
+    package="com.skstudio.WAstickersAppFestival">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -17,7 +17,7 @@
     </queries>
 
     <application
-        android:name=".StickerApplication"
+        android:name="com.skstudio.WAstickersAppFestival.StickerApplication"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@drawable/appicon"
@@ -26,7 +26,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:name=".SplashActivity"
+            android:name="com.skstudio.WAstickersAppFestival.SplashActivity"
             android:exported="true">
             <meta-data
                 android:name="android.app.lib_name"
@@ -41,34 +41,34 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-6979979912689100~2520356241" />
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
 
         <activity
-            android:name=".EntryActivity"
+            android:name="com.skstudio.WAstickersAppFestival.EntryActivity"
             android:exported="true">
 
         </activity>
-        <activity android:name=".StickerPackListActivity" />
+        <activity android:name="com.skstudio.WAstickersAppFestival.StickerPackListActivity" />
         <activity
-            android:name=".StickerPackDetailsActivity"
-            android:parentActivityName=".StickerPackListActivity"
+            android:name="com.skstudio.WAstickersAppFestival.StickerPackDetailsActivity"
+            android:parentActivityName="com.skstudio.WAstickersAppFestival.StickerPackListActivity"
             tools:ignore="UnusedAttribute">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.skstudio.WAstickersApp.StickerPackListActivity" />
+                android:value="com.skstudio.WAstickersAppFestival.StickerPackListActivity" />
         </activity>
         <activity
-            android:name=".StickerPackInfoActivity"
+            android:name="com.skstudio.WAstickersAppFestival.StickerPackInfoActivity"
             android:label="@string/title_activity_sticker_pack_info"
-            android:parentActivityName=".StickerPackDetailsActivity"
+            android:parentActivityName="com.skstudio.WAstickersAppFestival.StickerPackDetailsActivity"
             tools:ignore="UnusedAttribute">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.skstudio.WAstickersApp.StickerPackDetailsActivity" />
+                android:value="com.skstudio.WAstickersAppFestival.StickerPackDetailsActivity" />
         </activity>
 
         <provider
-            android:name=".StickerContentProvider"
+            android:name="com.skstudio.WAstickersAppFestival.StickerContentProvider"
             android:authorities="${contentProviderAuthority}"
             android:enabled="true"
             android:exported="true"

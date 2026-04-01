@@ -16,7 +16,7 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-6979979912689100/6497574329"
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"
         tools:ignore="MissingConstraints">
     </com.google.android.gms.ads.AdView>
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -97,7 +97,7 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <com.skstudio.WAstickersApp.BottomFadingRecyclerView
+        <com.skstudio.WAstickersAppFestival.BottomFadingRecyclerView
             android:id="@+id/sticker_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -197,7 +197,7 @@
                 android:layout_centerHorizontal="true"
                 android:layout_alignParentBottom="true"
                 ads:adSize="BANNER"
-                ads:adUnitId="ca-app-pub-6979979912689100/2968730147"
+                ads:adUnitId="ca-app-pub-3940256099942544/6300978111"
                 tools:ignore="MissingConstraints">
             </com.google.android.gms.ads.AdView>
         </LinearLayout>

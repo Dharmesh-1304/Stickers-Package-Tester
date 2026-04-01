@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.skstudio.WAstickersApp"  // Add this to define the namespace
+    namespace "com.skstudio.WAstickersAppFestival"  // Add this to define the namespace
     compileSdkVersion 35
 
     defaultConfig {
