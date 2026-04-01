@@ -8,8 +8,15 @@
 
 package com.skstudio.WAstickersApp;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -97,13 +104,20 @@ public class StickerPackListActivity extends AddStickerPackActivity {
 
 
     private final StickerPackListAdapter.OnAddButtonClickedListener onAddButtonClickedListener =
-            pack -> showRewardedAndAddSticker(pack.identifier, pack.name);
+            pack -> {
+                if (!isInternetAvailable()) {
+                    Toast.makeText(this, "Internet not available", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                showRewardedAndAddSticker(pack.identifier, pack.name);
+            };
 
     private void loadRewardedAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
 
         RewardedAd.load(this,
-                "ca-app-pub-6979979912689100/5679037049", // Test Ad Unit ID
+                "ca-app-pub-6979979912689100/5679037049", // test id
                 adRequest,
                 new RewardedAdLoadCallback() {
                     @Override
@@ -119,29 +133,19 @@ public class StickerPackListActivity extends AddStickerPackActivity {
     }
 
     private void showRewardedAndAddSticker(String identifier, String stickerPackName) {
-
-        if (isAdShowing) return;
-
         if (rewardedAd != null) {
-
             isAdShowing = true;
             isRewardEarned = false;
 
             rewardedAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-
                 @Override
                 public void onAdDismissedFullScreenContent() {
                     isAdShowing = false;
-
-                    // Check if reward was earned
                     if (!isRewardEarned) {
-                        Toast.makeText(StickerPackListActivity.this,
-                                "Watch full ad to unlock stickers",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(StickerPackListActivity.this, "Watch full ad to unlock stickers", Toast.LENGTH_SHORT).show();
                     }
-
                     rewardedAd = null;
-                    loadRewardedAd(); // preload next ad
+                    loadRewardedAd(); // preload next
                 }
 
                 @Override
@@ -149,22 +153,32 @@ public class StickerPackListActivity extends AddStickerPackActivity {
                     isAdShowing = false;
                     rewardedAd = null;
                     loadRewardedAd();
-
-                    Toast.makeText(StickerPackListActivity.this,
-                            "Ad failed, try again",
-                            Toast.LENGTH_SHORT).show();
                 }
             });
 
             rewardedAd.show(this, rewardItem -> {
-                //  User watched full ad
                 isRewardEarned = true;
-
                 addStickerPackToWhatsApp(identifier, stickerPackName);
             });
-
         } else {
-            Toast.makeText(this, "Ad not ready, try again", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean isInternetAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = cm.getActiveNetwork();
+            if (network == null) return false;
+
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+            return capabilities != null &&
+                    (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+        } else {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnected();
         }
     }
 

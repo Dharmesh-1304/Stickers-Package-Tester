@@ -200,10 +200,21 @@
                 ads:adUnitId="ca-app-pub-6979979912689100/2968730147"
                 tools:ignore="MissingConstraints">
             </com.google.android.gms.ads.AdView>
-
         </LinearLayout>
+        <!-- Progress Overlay -->
+        <FrameLayout
+            android:id="@+id/loading_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#80000000"
+            android:visibility="gone">
 
-
+            <ProgressBar
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"/>
+        </FrameLayout>
 
     </FrameLayout>
 </LinearLayout>

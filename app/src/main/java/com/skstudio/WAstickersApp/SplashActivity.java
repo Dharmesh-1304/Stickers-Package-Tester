@@ -3,41 +3,112 @@ package com.skstudio.WAstickersApp;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.WindowManager;
+import android.widget.TextView;
+import android.widget.Toast;
 
 public class SplashActivity extends AppCompatActivity {
 
-    private static int SPLASH_SCREEN_TIME_OUT=2000;
+    private static final int CHECK_INTERVAL = 2000;
+
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private TextView dotsText;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        //This method is used so that your splash activity
-        //can cover the entire screen.
 
         setContentView(R.layout.activity_splash);
-        //this will bind your MainActivity.class file with activity_main.
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
-        new Handler().postDelayed(new Runnable() {
+
+        dotsText = findViewById(R.id.loading_dots);
+
+        startDotAnimation();
+        checkInternetAndProceed();
+    }
+
+    // ✅ Internet check loop
+    private void checkInternetAndProceed() {
+        if (isInternetAvailable()) {
+            // ✅ Internet available → go to EntryActivity
+            startActivity(new Intent(SplashActivity.this, EntryActivity.class));
+            finish();
+        } else {
+           Toast.makeText(this, "Internet not available", Toast.LENGTH_SHORT).show();
+
+            // Retry after 2 sec
+            handler.postDelayed(this::checkInternetAndProceed, CHECK_INTERVAL);
+        }
+    }
+
+    // ✅ Modern internet check (no deprecated API)
+    private boolean isInternetAvailable() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (cm == null) return false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = cm.getActiveNetwork();
+            if (network == null) return false;
+
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+            if (capabilities == null) return false;
+
+            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                    || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET);
+        } else {
+            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnected();
+        }
+    }
+
+    // ✅ Dots animation
+    private void startDotAnimation() {
+        handler.post(new Runnable() {
+            int count = 0;
+
             @Override
             public void run() {
-                Intent i=new Intent(SplashActivity.this,
-                        EntryActivity.class);
-                //Intent is used to switch from one activity to another.
-
-                startActivity(i);
-                //invoke the SecondActivity.
-
-                finish();
-                //the current activity will get finished.
+                count++;
+                switch (count % 4) {
+                    case 0:
+                        dotsText.setText(".");
+                        break;
+                    case 1:
+                        dotsText.setText("..");
+                        break;
+                    case 2:
+                        dotsText.setText("...");
+                        break;
+                    case 3:
+                        dotsText.setText("");
+                        break;
+                }
+                handler.postDelayed(this, 500);
             }
-        }, SPLASH_SCREEN_TIME_OUT);
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
     }
 }
